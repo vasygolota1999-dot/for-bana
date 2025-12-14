@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Заявки</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<style>
+body { margin:0; font-family: Arial, sans-serif; }
+
+#bgVideo{
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+.overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: -1;
+}
+
+.container{
+  max-width: 900px;
+  margin: 40px auto;
+  background: rgba(255,255,255,0.95);
+  padding: 30px;
+  border-radius: 12px;
+}
+
+input, textarea, button{
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+table{ width:100%; border-collapse: collapse; }
+th, td{ border:1px solid #000; padding:8px; }
+
+img{ max-width:120px; border-radius:6px; }
+
+.audio-btn{
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 14px;
+  border-radius: 50px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="c:\Users\Василий\Downloads\29438-375445481_tiny.mp4" type="video/mp4">
+</video>
+
+<div class="overlay"></div>
+
+<audio id="bgAudio" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+<button class="audio-btn" onclick="toggleAudio()">🎵 Музика</button>
+
+<div class="container">
+
+<h2>от 15-20 сюда кидаем сраку и сиськи по бажанню треба шлюшка на др братка 
+     </h2>
+
+<input id="name" placeholder="Ім'я">
+<input id="email" placeholder="Email">
+<textarea id="message" placeholder="Повідомлення"></textarea>
+<input type="file" id="photo" accept="image/*">
+
+<button onclick="send()">Подати заявку</button>
+
+<hr>
+
+<h3>Вхід адміністратора</h3>
+<input type="password" id="adminPass" placeholder="Пароль">
+<button onclick="login()">Увійти</button>
+
+<div id="adminPanel" style="display:none;">
+  <h2>Усі заявки</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Імʼя</th>
+        <th>Email</th>
+        <th>Повідомлення</th>
+        <th>Фото</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "API_KEY",
+  authDomain: "PROJECT.firebaseapp.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT.appspot.com"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+const ADMIN_PASSWORD = "27081981";
+
+function toggleAudio(){
+  const a = document.getElementById("bgAudio");
+  a.paused ? a.play() : a.pause();
+}
+
+function login(){
+  if(adminPass.value === ADMIN_PASSWORD){
+    adminPanel.style.display = "block";
+    loadData();
+  }else{
+    alert("Невірний пароль");
+  }
+}
+
+async function send(){
+  if(!name.value || !email.value || !message.value){
+    alert("Заповніть всі поля");
+    return;
+  }
+
+  let photoURL = "";
+
+  if(photo.files[0]){
+    const f = photo.files[0];
+    const ref = storage.ref("photos/" + Date.now() + "_" + f.name);
+    await ref.put(f);
+    photoURL = await ref.getDownloadURL();
+  }
+
+  await db.collection("applications").add({
+    name: name.value,
+    email: email.value,
+    message: message.value,
+    photo: photoURL,
+    time: Date.now()
+  });
+
+  name.value = email.value = message.value = "";
+  photo.value = "";
+  alert("Заявку відправлено");
+}
+
+function loadData(){
+  db.collection("applications")
+    .orderBy("time","desc")
+    .onSnapshot(snap=>{
+      list.innerHTML = "";
+      snap.forEach(doc=>{
+        const d = doc.data();
+        list.innerHTML += `
+          <tr>
+            <td>${d.name}</td>
+            <td>${d.email}</td>
+            <td>${d.message}</td>
+            <td>${d.photo ? `<img src="${d.photo}">` : "—"}</td>
+          </tr>`;
+      });
+    });
+}
+</script>
+
+</body>
+</html>
